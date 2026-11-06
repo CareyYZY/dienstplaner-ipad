@@ -1,11 +1,33 @@
 'use strict';
 /* ============ Druck ============ */
+function isStandalone() {
+  return window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+}
+/* Als App vom Home-Bildschirm kann iOS window.print() oft nicht ausführen: dann wird eine eigene
+   Druckseite geöffnet (mit Drucken-Knopf; alternativ Teilen-Symbol → Drucken). */
+function openPrintPage(node) {
+  const css = new URL('style.css', location.href).href;
+  const html = '<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
+    + '<title>Drucken</title><link rel="stylesheet" href="' + css + '">'
+    + '<style>#app{display:none}#print{display:block!important;padding:10px;overflow:auto}html,body{height:auto}.pbar{position:sticky;top:0;left:0;background:#fff;color:#111;padding:8px 10px;border-bottom:1px solid #ccc;z-index:5;font:15px -apple-system,sans-serif}.pbar button{font:inherit;padding:10px 18px;border-radius:10px;border:1px solid #2563EB;background:#2563EB;color:#fff;margin-right:10px}@media print{.pbar{display:none}#print{padding:0}}</style>'
+    + '</head><body><div class="pbar"><button onclick="window.print()">🖨 Drucken</button><span>oder Teilen-Symbol → Drucken</span></div>'
+    + '<div id="print">' + node.outerHTML + '</div></body></html>';
+  const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+  const w = window.open(url, '_blank');
+  setTimeout(() => URL.revokeObjectURL(url), 120000);
+  return !!w;
+}
 function runPrint(node) {
   const box = $('#print');
   box.replaceChildren(node);
-  const done = () => { box.replaceChildren(); window.removeEventListener('afterprint', done); };
-  window.addEventListener('afterprint', done);
-  setTimeout(() => window.print(), 60);
+  // Der Druck-Inhalt bleibt im (auf dem Bildschirm unsichtbaren) Bereich stehen: iOS meldet "afterprint"
+  // teils sofort und würde ihn sonst vor dem Druck leeren. print() läuft direkt im Tippen, nicht verzögert.
+  if (isStandalone()) {
+    let ok = false;
+    try { ok = openPrintPage(node); } catch (e) { ok = false; }
+    if (ok) return;
+  }
+  try { window.print(); } catch (e) { toast('Drucken wird von diesem Browser nicht unterstützt.'); }
 }
 
 function printWeek() {

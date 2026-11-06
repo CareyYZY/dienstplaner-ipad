@@ -84,7 +84,7 @@ const defaults = () => ({
   v: 1, next: 1, emps: [], areas: [], shifts: [], abs: [], tasks: [], tmpls: [], done: {},
   set: {
     theme: 'auto', barColor: 'employee', openFrom: 300, openTo: 1200, minRest: 11,
-    earlyBefore: 420, lateFrom: 660, cover: [{ from: 300, to: 1200, count: 1, days: 63, full: true }],
+    earlyBefore: 420, lateFrom: 660, cover: [{ from: 300, to: 1200, count: 1, days: 63 }],
   },
 });
 let DB = defaults();
@@ -93,7 +93,7 @@ function loadDB() {
     const raw = localStorage.getItem(KEY);
     if (raw) DB = Object.assign(defaults(), JSON.parse(raw));
     DB.set = Object.assign(defaults().set, DB.set);
-    DB.set.cover.forEach((r) => { if (r.full === undefined) r.full = r.from <= DB.set.openFrom && r.to >= DB.set.openTo - 60; });
+    DB.set.cover.forEach((r) => { if (r.full) { r.from = DB.set.openFrom; r.to = DB.set.openTo; } delete r.full; });
   } catch (e) { DB = defaults(); }
 }
 function saveDB() {
@@ -153,8 +153,7 @@ function coverReq(d) {
   const req = new Array(96).fill(0), k = dow(d);
   for (const r of DB.set.cover) {
     if (!(r.days & (1 << k))) continue;
-    const from = r.full ? DB.set.openFrom : r.from, to = r.full ? DB.set.openTo : r.to;
-    for (let q = Math.floor(from / 15); q < Math.ceil(to / 15) && q < 96; q++) req[q] = Math.max(req[q], r.count);
+    for (let q = Math.floor(r.from / 15); q < Math.ceil(r.to / 15) && q < 96; q++) req[q] = Math.max(req[q], r.count);
   }
   return req;
 }
