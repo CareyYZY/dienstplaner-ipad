@@ -75,14 +75,14 @@ function buildField(f) {
 }
 
 /** Formular-Dialog. save(values) → Fehlertext (bleibt offen) oder nichts (schließt). */
-function openForm(title, fields, { save, del, saveLabel = 'Speichern', extra = [], wide = false } = {}) {
+function openForm(title, fields, { save, del, saveLabel = 'Speichern', extra = [], wide = false, delNow = false } = {}) {
   const built = fields.map((f) => ({ f, ...buildField(f) }));
   const err = h('div', { class: 'err' });
   const form = h('div', { class: 'form' }, built.map(({ f, node }) =>
     h('div', { class: 'row' + (f.type === 'bool' ? ' boolrow' : '') }, f.label ? h('label', { class: 'lbl' }, f.label) : null, node, f.hint ? h('div', { class: 'hint' }, f.hint) : null)));
   const vals = () => Object.fromEntries(built.filter((b) => b.f.k).map((b) => [b.f.k, b.get()]));
   const m = modal(title, h('div', {}, form, err, h('div', { class: 'actions' },
-    del ? h('button', { class: 'btn danger left', onclick: () => confirmBox('Wirklich löschen?', 'Löschen', () => { m.close(); del(); }) }, 'Löschen') : null,
+    del ? h('button', { class: 'btn danger left', onclick: () => { if (delNow) { m.close(); del(); } else confirmBox('Wirklich löschen?', 'Löschen', () => { m.close(); del(); }); } }, 'Löschen') : null,
     ...extra.map((x) => h('button', { class: 'btn', onclick: () => { const r = x.fn(vals(), m); if (typeof r === 'string') err.textContent = r; } }, x.label)),
     h('button', { class: 'btn', onclick: () => m.close() }, 'Abbrechen'),
     h('button', { class: 'btn primary', onclick: () => { const r = save(vals()); if (typeof r === 'string') err.textContent = r; else m.close(); } }, saveLabel))), { wide });
