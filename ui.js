@@ -210,8 +210,9 @@ function rulesDialog() {
   const box = h('div', { class: 'rules' });
   const draw = () => box.replaceChildren(...rules.map((r, i) => {
     const row = h('div', { class: 'rule' },
-      h('input', { type: 'time', step: 900, value: T(r.from), onchange: (ev) => { r.from = parseT(ev.target.value); } }), '–',
-      h('input', { type: 'time', step: 900, value: T(r.to), onchange: (ev) => { r.to = parseT(ev.target.value); } }),
+      h('button', { type: 'button', class: 'chipbtn' + (r.full ? ' on' : ''), onclick: () => { r.full = !r.full; draw(); } }, 'Ganze Öffnungszeit'),
+      h('input', { type: 'time', step: 900, disabled: !!r.full, value: T(r.full ? DB.set.openFrom : r.from), onchange: (ev) => { r.from = parseT(ev.target.value); } }), '–',
+      h('input', { type: 'time', step: 900, disabled: !!r.full, value: T(r.full ? DB.set.openTo : r.to), onchange: (ev) => { r.to = parseT(ev.target.value); } }),
       h('input', { type: 'number', min: 0, max: 50, value: r.count, class: 'num', onchange: (ev) => { r.count = Math.max(0, parseInt(ev.target.value, 10) || 0); } }), 'Pers.',
       h('div', { class: 'chips' }, WD.map((d, k) => h('button', { type: 'button', class: 'chipbtn' + (r.days & (1 << k) ? ' on' : ''), onclick: () => { r.days ^= 1 << k; draw(); } }, d))),
       h('button', { class: 'mini', onclick: () => { rules.splice(i, 1); draw(); } }, '✕'));
@@ -225,12 +226,12 @@ function rulesDialog() {
     { k: 'minRest', label: 'Mindest-Ruhezeit zwischen zwei Tagen (Std.)', type: 'number', v: s.minRest },
     { k: 'early', label: 'Früh = Beginn vor', type: 'time', v: T(s.earlyBefore), step: 900 },
     { k: 'late', label: 'Spät = Beginn ab', type: 'time', v: T(s.lateFrom), step: 900 },
-    { label: 'Mindestbesetzung (Zeitraum, Personen, Tage)', type: 'custom', node: h('div', {}, box, h('button', { class: 'btn small', onclick: () => { rules.push({ from: s.openFrom, to: s.openTo, count: 1, days: 63 }); draw(); } }, '＋ Zeitraum')), get: () => null },
+    { label: 'Mindestbesetzung (Zeitraum, Personen, Tage)', type: 'custom', node: h('div', {}, box, h('button', { class: 'btn small', onclick: () => { rules.push({ from: s.openFrom, to: s.openTo, count: 1, days: 63, full: false }); draw(); } }, '＋ Zeitraum')), get: () => null },
   ], {
     save: (v) => {
       if (!(v.minRest >= 0 && v.minRest <= 24)) return 'Ruhezeit: bitte 0–24 Stunden eingeben.';
       if (parseT(v.openTo) <= parseT(v.openFrom)) return 'Die Öffnungszeit „bis“ muss nach „von“ liegen.';
-      if (rules.some((r) => r.to <= r.from)) return 'In der Mindestbesetzung muss „bis“ nach „von“ liegen.';
+      if (rules.some((r) => !r.full && r.to <= r.from)) return 'In der Mindestbesetzung muss „bis“ nach „von“ liegen.';
       Object.assign(DB.set, { openFrom: parseT(v.openFrom), openTo: parseT(v.openTo), minRest: v.minRest, earlyBefore: parseT(v.early), lateFrom: parseT(v.late), cover: rules });
       saveDB(); render();
     },
