@@ -1,1 +1,12 @@
-
+{
+  "name": "Dienstplaner",
+  "short_name": "Dienstplaner",
+  "description": "Dienstplan, Urlaubsplan und Aufgaben für die Metzgerei – offline, Daten lokal auf dem Gerät",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F3F4F6",
+  "theme_color": "#2563EB",
+  "lang": "de"
+}
