@@ -47,7 +47,7 @@ function printYear() {
   const per = 12;
   for (let i = 0; i < emps.length; i += per) {
     doc.append(h('div', { class: 'pg' }, h('h1', {}, `Urlaubsplan ${S.year}`), yearGrid(emps.slice(i, i + per), S.year, false),
-      h('div', { class: 'legend' }, [['#2563EB', 'Urlaub genehmigt'], ['#F59E0B', 'Beantragt'], ['#DC2626', 'Krank'], ['#0D9488', 'Berufsschule'], ['#7C3AED', 'Unbezahlt'], ['#6B7280', 'Sonstiges']]
+      h('div', { class: 'legend' }, [['#2563EB', 'Urlaub'], ['#DC2626', 'Krank'], ['#0D9488', 'Berufsschule'], ['#7C3AED', 'Unbezahlt'], ['#6B7280', 'Sonstiges']]
         .map(([c, t]) => h('span', {}, h('i', { class: 'sq', style: { background: c } }), t))),
       h('p', { class: 'foot' }, `Gedruckt am ${fmtDMY(today())}`)));
   }

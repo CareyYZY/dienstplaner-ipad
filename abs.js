@@ -15,7 +15,7 @@ function absView() {
     newBtn('Urlaub', '＋ Urlaub'), newBtn('Krank', '＋ Krank'), newBtn('Berufsschule', '＋ Schule'),
     h('button', { class: 'btn', onclick: () => printYear() }, '🖨 Jahr drucken'));
   const legend = h('div', { class: 'legend' },
-    [['#2563EB', 'Urlaub genehmigt'], ['#F59E0B', 'Beantragt'], ['#DC2626', 'Krank'], ['#0D9488', 'Berufsschule'], ['#7C3AED', 'Unbezahlt'], ['#6B7280', 'Sonstiges']]
+    [['#2563EB', 'Urlaub'], ['#DC2626', 'Krank'], ['#0D9488', 'Berufsschule'], ['#7C3AED', 'Unbezahlt'], ['#6B7280', 'Sonstiges']]
       .map(([c, t]) => h('span', {}, h('i', { class: 'sq', style: { background: c } }), t)));
   const body = emps.length ? yearGrid(emps, year, true) : h('div', { class: 'card empty' }, h('p', {}, 'Noch keine Mitarbeiter angelegt.'), h('button', { class: 'btn primary', onclick: () => go('staff') }, 'Zu den Mitarbeitern'));
   return h('div', { class: 'page' }, bar, legend, body);
@@ -38,10 +38,10 @@ function yearGrid(emps, year, interactive) {
     h('div', { class: 'yrcell' }, MON3.map((n, m) => h('span', { class: 'hl', style: { left: pct(`${year}-${pad(m + 1)}-01`) + '%' } }, n))));
 
   const rows = emps.map((e, i) => {
-    const used = vacationDays(e, year, 'Genehmigt'), pend = vacationDays(e, year, 'Beantragt');
+    const used = vacationDays(e, year, 'Genehmigt');
     const cell = h('div', { class: 'yrcell touchy', 'data-emp': e.id });
     const row = h('div', { class: 'yrrow' + (i % 2 ? ' alt' : ''), 'data-emp': e.id },
-      h('div', { class: 'tlname' }, nameLine(e, 14), h('small', {}, `${used} von ${e.vac} Tagen genommen` + (pend ? ` · ${pend} beantragt` : ''))), cell);
+      h('div', { class: 'tlname' }, nameLine(e, 14), h('small', {}, `${used} von ${e.vac} Tagen genommen`)), cell);
     DB.abs.filter((a) => a.emp === e.id && a.start <= dec31 && a.end >= jan1).forEach((a) => {
       const s = a.start < jan1 ? jan1 : a.start, en = a.end > dec31 ? dec31 : a.end;
       const col = absColor(a);
@@ -115,13 +115,12 @@ function absCreate(cell, e, days, jan1) {
 
 function absDialog(a, pre = {}) {
   const act = activeEmps();
-  const x = a || { emp: pre.emp || (act[0] && act[0].id), kind: pre.kind || 'Urlaub', status: (pre.kind || 'Urlaub') === 'Urlaub' ? 'Beantragt' : 'Genehmigt', start: pre.start || `${S.year}-${today().slice(5)}`, end: pre.end || pre.start || `${S.year}-${today().slice(5)}`, note: '' };
+  const x = a || { emp: pre.emp || (act[0] && act[0].id), kind: pre.kind || 'Urlaub', status: 'Genehmigt', start: pre.start || `${S.year}-${today().slice(5)}`, end: pre.end || pre.start || `${S.year}-${today().slice(5)}`, note: '' };
   if (!act.length) { toast('Bitte zuerst Mitarbeiter anlegen.'); return; }
   if (!act.some((e) => e.id === x.emp) && emp(x.emp)) act.push(emp(x.emp));
   openForm(a ? 'Abwesenheit bearbeiten' : 'Neue Abwesenheit', [
     { k: 'emp', label: 'Mitarbeiter', type: 'select', v: x.emp, opts: act.map((e) => [e.id, empName(e)]) },
     { k: 'kind', label: 'Art', type: 'select', v: x.kind, opts: ABS_KINDS.map((k) => [k, k]) },
-    { k: 'status', label: 'Status', type: 'select', v: x.status, opts: ABS_STATES.map((k) => [k, k]) },
     { k: 'start', label: 'Von', type: 'date', v: x.start },
     { k: 'end', label: 'Bis', type: 'date', v: x.end },
     { k: 'note', label: 'Notiz', type: 'text', v: x.note },
@@ -141,7 +140,7 @@ function absDialog(a, pre = {}) {
     save: (v) => {
       if (!v.start || !v.end) return 'Bitte Zeitraum angeben.';
       if (v.end < v.start) return 'Das Ende liegt vor dem Beginn.';
-      const rec = { emp: +v.emp, kind: v.kind, status: v.status, start: v.start, end: v.end, note: v.note.trim() };
+      const rec = { emp: +v.emp, kind: v.kind, status: 'Genehmigt', start: v.start, end: v.end, note: v.note.trim() };
       let made = 0;
       if (a) Object.assign(a, rec);
       else if (+v.rep > 0) {
@@ -163,8 +162,8 @@ function absDialog(a, pre = {}) {
       } else DB.abs.push({ id: nid(), ...rec });
       saveDB();
       const e = emp(+v.emp);
-      if (v.kind === 'Urlaub' && v.status !== 'Abgelehnt') {
-        const y = +v.start.slice(0, 4), left = e.vac - vacationDays(e, y, 'Genehmigt') - vacationDays(e, y, 'Beantragt');
+      if (v.kind === 'Urlaub') {
+        const y = +v.start.slice(0, 4), left = e.vac - vacationDays(e, y, 'Genehmigt');
         if (left < 0) toast(`Achtung: ${empName(e)} hat ${-left} Urlaubstag(e) mehr geplant als verfügbar.`);
       }
       render();

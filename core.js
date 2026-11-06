@@ -94,6 +94,7 @@ function loadDB() {
     if (raw) DB = Object.assign(defaults(), JSON.parse(raw));
     DB.set = Object.assign(defaults().set, DB.set);
     DB.set.cover.forEach((r) => { if (r.full) { r.from = DB.set.openFrom; r.to = DB.set.openTo; } delete r.full; });
+    DB.abs = DB.abs.filter((a) => a.status !== 'Abgelehnt'); DB.abs.forEach((a) => { a.status = 'Genehmigt'; });
   } catch (e) { DB = defaults(); }
 }
 function saveDB() {
