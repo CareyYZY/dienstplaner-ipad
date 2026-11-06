@@ -195,6 +195,7 @@ function shiftDialog(s, pre) {
     { k: 'brk', label: 'Pause (Minuten)', type: 'number', v: x.brk == null ? '' : x.brk, ph: 'automatisch', hint: 'Leer lassen = automatisch: ab 6 Std. 30 Min., ab 8,5 Std. 45 Min., ab 10 Std. 60 Min.' },
     { k: 'note', label: 'Notiz', type: 'text', v: x.note },
   ], {
+    delNow: true,
     del: s ? () => { DB.shifts = DB.shifts.filter((y) => y !== s); saveDB(); render(); } : null,
     extra: s ? [{ label: '⧉ Auf Folgetag kopieren', fn: (v, m) => { const e = check(v); if (e) return e; DB.shifts.push({ id: nid(), ...build(v), date: addD(v.date, 1) }); saveDB(); m.close(); render(); } }] : [],
     save: (v) => {
