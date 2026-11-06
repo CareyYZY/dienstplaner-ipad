@@ -1,5 +1,5 @@
 // Offline-Cache: Seite wird sofort aus dem Cache geladen und im Hintergrund aktualisiert.
-const CACHE = 'dienstplaner-v3';
+const CACHE = 'dienstplaner-v4';
 const FILES = ['./', 'index.html', 'style.css', 'core.js', 'ui.js', 'plan.js', 'abs.js', 'app.js', 'manifest.webmanifest'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES.map((f) => new Request(f, { cache: 'reload' })))).then(() => self.skipWaiting()));

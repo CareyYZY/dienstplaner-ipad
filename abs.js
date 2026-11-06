@@ -125,13 +125,42 @@ function absDialog(a, pre = {}) {
     { k: 'start', label: 'Von', type: 'date', v: x.start },
     { k: 'end', label: 'Bis', type: 'date', v: x.end },
     { k: 'note', label: 'Notiz', type: 'text', v: x.note },
+    ...(a
+      ? (a.series ? [{ label: '', type: 'custom', get: () => null, node: h('p', { class: 'hint' }, `Teil einer Serie (${DB.abs.filter((y) => y.series === a.series).length} Termine). Änderungen gelten nur für diesen Termin.`) }] : [])
+      : [
+        { k: 'rep', label: 'Wiederholen', type: 'select', v: '0', opts: [['0', 'Nicht wiederholen'], ['1', 'Jede Woche'], ['2', 'Alle 2 Wochen'], ['3', 'Alle 3 Wochen'], ['4', 'Alle 4 Wochen']] },
+        { k: 'wd', label: 'An diesen Wochentagen', type: 'days', v: 0, hint: 'Leer = Wochentag des Von-Datums. Mehrere Tage möglich. Gilt nur bei Wiederholung.' },
+        { k: 'until', label: 'Wiederholen bis', type: 'date', v: `${x.start.slice(0, 4)}-12-31`, hint: 'Gilt nur bei Wiederholung.' },
+      ]),
   ], {
+    extra: a && a.series ? [{ label: 'Ganze Serie löschen', fn: (v, m) => {
+      const n = DB.abs.filter((y) => y.series === a.series).length;
+      confirmBox(`Alle ${n} Termine dieser Serie löschen?`, 'Serie löschen', () => { DB.abs = DB.abs.filter((y) => y.series !== a.series); saveDB(); m.close(); render(); });
+    } }] : [],
     del: a ? () => { DB.abs = DB.abs.filter((y) => y !== a); saveDB(); render(); } : null,
     save: (v) => {
       if (!v.start || !v.end) return 'Bitte Zeitraum angeben.';
       if (v.end < v.start) return 'Das Ende liegt vor dem Beginn.';
       const rec = { emp: +v.emp, kind: v.kind, status: v.status, start: v.start, end: v.end, note: v.note.trim() };
-      if (a) Object.assign(a, rec); else DB.abs.push({ id: nid(), ...rec });
+      let made = 0;
+      if (a) Object.assign(a, rec);
+      else if (+v.rep > 0) {
+        if (!v.until || v.until < v.start) return 'Das Ende der Wiederholung liegt vor dem Beginn.';
+        const len = diffD(v.start, v.end), step = +v.rep, sid = nid(), list = [], mask = v.wd || (1 << dow(v.start));
+        for (let w = 0; list.length <= 400; w += step) {
+          const mon = addD(monday(v.start), 7 * w);
+          if (mon > v.until) break;
+          for (let k = 0; k < 7; k++) {
+            if (!(mask & (1 << k))) continue;
+            const d = addD(mon, k);
+            if (d >= v.start && d <= v.until) list.push(d);
+          }
+        }
+        if (!list.length) return 'Im gewählten Zeitraum gibt es keinen Termin.';
+        if (list.length > 400) return 'Zu viele Termine (höchstens 400).';
+        list.forEach((d) => DB.abs.push({ id: nid(), ...rec, start: d, end: addD(d, len), series: sid }));
+        made = list.length;
+      } else DB.abs.push({ id: nid(), ...rec });
       saveDB();
       const e = emp(+v.emp);
       if (v.kind === 'Urlaub' && v.status !== 'Abgelehnt') {
@@ -139,6 +168,7 @@ function absDialog(a, pre = {}) {
         if (left < 0) toast(`Achtung: ${empName(e)} hat ${-left} Urlaubstag(e) mehr geplant als verfügbar.`);
       }
       render();
+      if (made) toast(`${made} Termine angelegt.`);
     },
   });
 }
