@@ -160,7 +160,7 @@ function attachCreate(cell, e, d, startMin, span, blocked) {
       if (ghost) ghost.remove();
       if (e2.type === 'pointercancel') return;
       if (blocked && !confirm(`${empName(e)} hat an diesem Tag Abwesenheit. Trotzdem Arbeitszeit eintragen?`)) return;
-      if (ghost) { const a = Math.min(m0, m1), b = Math.max(m0, m1, a + SNAP); shiftDialog(null, { emp: e.id, date: d, start: a, end: b }); }
+      if (ghost) { const a = Math.min(m0, m1), b = Math.max(m0, m1, a + SNAP); DB.shifts.push({ id: nid(), emp: e.id, date: d, start: a, end: b, brk: autoBreak(b - a), note: '' }); saveDB(); render(); }
       else shiftDialog(null, { emp: e.id, date: d, start: clamp(m0, 0, 1440 - 480), end: clamp(m0, 0, 1440 - 480) + 480 });
     };
     window.addEventListener('pointermove', mv); window.addEventListener('pointerup', fin); window.addEventListener('pointercancel', fin);
